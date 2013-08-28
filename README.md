@@ -34,39 +34,40 @@ Secondary.com - serving as a backup to Primary via 8080, not serving clients
 2. Edit setup.py to install autosync.py as a filter named autosync
 3. Edit proxy-server.conf in Primary and add:
 
-[DEFAULT]
-allowed_sync_hosts = Secondary.com
+    [DEFAULT]
+    allowed_sync_hosts = Secondary.com
 
-[pipeline:main]
-# Add autosync after the request is authenticated by the auth system used
-pipeline = ...autosync... 
+    [pipeline:main]
+    # Add autosync after the request is authenticated by the auth system used
+    pipeline = ...autosync... 
 
-[filter:autosync]
-use = egg:swift#autosync
-autosync_my_cluster = http://Primary.com:8080
-autosync_placement = http://Primary.com:8080,http://Secondary.com:8080
+    [filter:autosync]
+    use = egg:swift#autosync
+    autosync_my_cluster = http://Primary.com:8080
+    autosync_placement = http://Primary.com:8080,http://Secondary.com:8080
 
 3. Edit container-server.conf of Primary and add:
-[DEFAULT]
-allowed_sync_hosts = Secondary.com
+
+    [DEFAULT]
+    allowed_sync_hosts = Secondary.com
 
 4. Edit proxy-server.conf in Secondary and add:
 
-[DEFAULT]
-allowed_sync_hosts = Primary.com
+    [DEFAULT]
+    allowed_sync_hosts = Primary.com
 
-[pipeline:main]
-# Remove the auth system used or change it to allow autosync requests to go through
-# Add autosync to the pipeline
-pipeline = ...autosync... 
+    [pipeline:main]
+    # Remove the auth system used or change it to allow autosync requests to go through
+    # Add autosync to the pipeline
+    pipeline = ...autosync... 
 
-[filter:autosync]
-use = egg:swift#autosync
-autosync_my_cluster = http://Secondary.com:8080
-autosync_placement = http://Primary.com:8080,http://Secondary.com:8080
-
+    [filter:autosync]
+    use = egg:swift#autosync
+    autosync_my_cluster = http://Secondary.com:8080
+    autosync_placement = http://Primary.com:8080,http://Secondary.com:8080
 
 5. Edit container-server.conf of Secondary and add:
-[DEFAULT]
-allowed_sync_hosts = Primary.com
+
+    [DEFAULT]
+    allowed_sync_hosts = Primary.com
 
