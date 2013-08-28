@@ -86,7 +86,6 @@ class AutosyncMiddleware(object):
         self.conn_timeout = 10
         self.keychars = string.ascii_letters + string.digits
         self.logger = get_logger(self.conf, log_route='nemo')
-        print >> sys.stderr, '__init__ conf %s' % conf
         self.override_auth = \
             config_true_value(conf.get('override_auth', False))
         self.default_my_cluster = conf.get('autosync_my_cluster', None)
@@ -101,7 +100,6 @@ class AutosyncMiddleware(object):
     #    return resp(self.env, self.start_response)
 
     def send_to_peer(self, peer, sync_to_peer, key):
-        #print >> sys.stderr, 'Trying peer %s ' % peer
         peer = peer.lower()
         ssl = False
         if peer.startswith('https://'):
@@ -109,7 +107,6 @@ class AutosyncMiddleware(object):
             peer = peer[8:]
         if peer.startswith('http://'):
             peer = peer[7:]
-        print >> sys.stderr, 'Trying peer %s  sync_to_peer %s ' %  (peer, sync_to_peer)
         try:
             with Timeout(self.conn_timeout):
                 if ssl:
@@ -118,58 +115,39 @@ class AutosyncMiddleware(object):
                 else:
                     #print 'HTTP %s ' % peer
                     conn = HTTPConnection(peer)
-            print >> sys.stderr, '<?>putrequest %s %s ' % \
-                (self.req.method, self.req.path_qs)
             conn.putrequest(self.req.method, self.req.path_qs)
-            #print self.env
             conn.putheader('X-Orig-Cluster', self.my_cluster)
             conn.putheader('X-Account-Meta-Orig-Cluster', self.my_cluster)
             conn.putheader('X-Container-Meta-Orig-Cluster', self.my_cluster)
             if key:
                 sync_to = sync_to_peer + self.env['PATH_INFO']
-                print >> sys.stderr, 'sync_to %s ' % sync_to
                 conn.putheader('X-Container-Sync-To', sync_to)
-                #conn.putheader('X-Container-Sync-Key', key)
             for header, value in self.req.headers.iteritems():
                 if header != 'X-Container-Sync-To':
-                    print >> sys.stderr,'putheader %s = %s ' % (header, value)
                     conn.putheader(header, value)
             conn.endheaders(message_body=None)
-            print >> sys.stderr, 'send'
-            #conn.send('')
-            print >> sys.stderr, peer + ': getresponse'
             with Timeout(self.req_timeout):
                 resp = conn.getresponse()
-                print >> sys.stderr, peer + ': resp.status %s' % resp.status
-                #print peer + ': body %s' % resp.read()
-                print >> sys.stderr, '<<<<<<<< some repsonse'
                 status = resp.status
-                print >> sys.stderr, '<<<<<<<< some repsonse %s ' % status
                 return (status, resp.getheaders(), resp.read())
         except (Exception, Timeout) as e:
             # Print error log
             print >> sys.stderr, peer + ': Exception, Timeout error: %s' % e
-            #self.exception_occurred(node, self.server_type,
-            #                        _('Trying to %(method)s %(path)s') %
-            #                        {'method': method, 'path': path})
 
         print '<<<<<<<< HTTP_SERVICE_UNAVAILABLE'
         #return HTTP_SERVICE_UNAVAILABLE, None, None
 
     def send_to_peers(self, peers, key):
-        print sys.stderr, '&&&&&&&&&&&&&   send_remotes  %s (%s)' % (peers, self.my_cluster)
         pile = GreenPile(len(peers))
         # Have the first peer to sync to the local cluster
         sync_to_peer = self.my_cluster
         for peer in peers:
-            print sys.stderr, '&&&&&&&&&&&&&   send_remotes %s, %s ' % (peer, sync_to_peer)
             # create thread per peer and send a request
             pile.spawn(self.send_to_peer, peer, sync_to_peer, key)
             # Have the next peer to sync to the present peer
             sync_to_peer = peer
         # collect the results, if anyone failed....
         response = [resp for resp in pile if resp]
-        print 'response %s' % response
         while len(response) < len(peers):
             response.append((HTTP_SERVICE_UNAVAILABLE, None, None))
         return response
@@ -201,11 +179,6 @@ class AutosyncMiddleware(object):
             self.status = status
             self.headers = list(headers)
             self.exc_info = exc_info
-
-        #env['swift.placement'] = ['https://example.com:443',
-        #                          'http://aaa.info:463', 'localhost:8080']
-        #env['swift.placement'] = ['http://vanp1:8080', 'http://swiftDev:8080']
-        #env['swift.my_cluster'] = 'http://swiftDev:8080'
         self.env = env
         self.start_response = start_response
 
@@ -278,14 +251,12 @@ class AutosyncMiddleware(object):
             sync_to_peer = peers[-1]  # Sync to the prev peer
             sync_to = sync_to_peer + self.env['PATH_INFO']
             env['HTTP_X_CONTAINER_SYNC_TO'] = sync_to
-            print >> sys.stderr, 'env***** =  %s' % env   
         else:
             key = None  # Signals that there are no Container-Sync headers
 
         # Try localy, if we fail and not DELETE respond with a faliure.
         resp_data = self.app(self.env, my_start_response)
         data = ''.join(iter(resp_data))
-        print >> sys.stderr, 'self.status %s ' % self.status
         if hasattr(resp_data, 'close'):
             resp_data.close()
         resp_status_int = int(self.status[:3])
