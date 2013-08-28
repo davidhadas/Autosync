@@ -38,7 +38,7 @@ Secondary.com - serving as a backup to Primary via 8080, not serving clients
     allowed_sync_hosts = Secondary.com
 
     [pipeline:main]
-    # Add autosync after the request is authenticated by the auth system used
+    \# Add autosync after the request is authenticated by the auth system used
     pipeline = ...autosync... 
 
     [filter:autosync]
@@ -57,8 +57,8 @@ Secondary.com - serving as a backup to Primary via 8080, not serving clients
     allowed_sync_hosts = Primary.com
 
     [pipeline:main]
-    # Remove the auth system used or change it to allow autosync requests to go through
-    # Add autosync to the pipeline
+    \# Remove the auth system used or change it to allow autosync requests to go through
+    \# Add autosync to the pipeline
     pipeline = ...autosync... 
 
     [filter:autosync]
