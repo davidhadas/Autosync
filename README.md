@@ -27,8 +27,8 @@ though the autosync middleware offers an initial auth override mechanism
 to allow testing and initial work with a remot backup cluster.
 
 Assuming two clusters:
-Primary.com - serving clients via port 8080
-Secondary.com - serving as a backup to Primary via 8080, not serving clients
+* Primary.com - serving clients via port 8080
+* Secondary.com - serving as a backup to Primary via 8080, not serving clients
 
 1. Add the autosync.py to your swift/common/middleware/
 2. Edit setup.py to install autosync.py as a filter named autosync
